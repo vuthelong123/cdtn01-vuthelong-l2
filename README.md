@@ -21,7 +21,7 @@ cd kiem-tra
 Yêu cầu: **Docker Desktop / Docker Engine** (có plugin `docker compose`) và cổng **`8000`** đang trống.
 
 ```bash
-cp .env.example .env
+copy .env.example .env
 docker compose up -d --build
 ```
 
