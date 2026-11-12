@@ -2,7 +2,7 @@
 
 - **Hệ thống:** Quản lý Yêu cầu Bảo hành — Mekong Mobile (Luồng L2 - Service Desk)
 - **Sinh viên thực hiện:** Vũ Thế Long — MSSV: `2374802010286`
-- **Repository & Tag nộp bài:** `https://github.com/vuthelong123/CDTN01` (`v1.0`)
+- **Repository & Tag nộp bài:** `https://github.com/vuthelong123/cdtn01-vuthelong-l2` (`v1.0`)
 
 ---
 
@@ -139,3 +139,4 @@ python src/main.py
   - Start Command: `gunicorn --chdir src --bind 0.0.0.0:$PORT --workers 1 main:app`
   - Environment Variables: `DB_TYPE=sqlite`, `FLASK_DEBUG=false`, `FLASK_SECRET=<chuỗi bí mật ngẫu nhiên sinh mới>`, Health Check Path: `/health`.
 - **Runtime `Docker` (nếu nối tới MySQL Cloud như Aiven / TiDB):** giữ `Root Directory=BT2`, `Dockerfile Path=./Dockerfile`, đặt `PORT=8000`, `DB_TYPE=mysql` và điền đầy đủ `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `FLASK_SECRET`, `FLASK_DEBUG=false`.
+
