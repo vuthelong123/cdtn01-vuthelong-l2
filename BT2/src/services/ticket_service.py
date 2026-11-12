@@ -3,8 +3,9 @@
 Không phụ thuộc vào Flask routes hay framework web.
 Toàn bộ tương tác dữ liệu được thực hiện thông qua repo (Repository Pattern).
 """
+import calendar
 import uuid
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from validators.ticket_validator import (CATEGORY_LABELS, MIN_DESC_LENGTH,
                                          PRIORITY_LABELS, STATUS_LABELS,
@@ -40,17 +41,26 @@ def compute_due_date(received_at, priority):
     return due
 
 
+def _add_months(start_date, months):
+    """Cộng chính xác số tháng theo lịch, giữ ngày cuối tháng hợp lệ nếu vượt quá."""
+    total_months = start_date.month - 1 + months
+    year = start_date.year + total_months // 12
+    month = total_months % 12 + 1
+    day = min(start_date.day, calendar.monthrange(year, month)[1])
+    return date(year, month, day)
+
+
 def warranty_state(ticket):
     """QT-05: Xác định tình trạng bảo hành của thiết bị tại thời điểm tiếp nhận."""
     purchase = ticket.get("purchase_date")
     months = ticket.get("warranty_months")
-    if not purchase or months is None:
+    if not purchase or months is None or months < 0:
         return "unverified"
+    purchase_date = purchase.date() if isinstance(purchase, datetime) else purchase
     received = ticket["received_at"]
-    elapsed = (received.year - purchase.year) * 12 + (received.month - purchase.month)
-    if received.day < purchase.day:
-        elapsed -= 1
-    return "ok" if elapsed <= months else "expired"
+    received_date = received.date() if isinstance(received, datetime) else received
+    expiry_date = _add_months(purchase_date, months)
+    return "ok" if received_date <= expiry_date else "expired"
 
 
 def create_ticket(repo, data, employee_id, now=None):
