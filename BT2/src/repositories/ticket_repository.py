@@ -88,7 +88,16 @@ class MySQLTicketRepository:
             "(SELECT COUNT(*) FROM ticket x WHERE x.technician_id = tc.technician_id "
             " AND x.ticket_status NOT IN ('HOAN_TAT','DA_DONG')) AS open_tickets "
             "FROM technician tc JOIN employee e ON e.employee_id = tc.employee_id "
-            "WHERE tc.is_active = TRUE AND e.is_active = TRUE ORDER BY e.full_name"
+            "WHERE tc.is_active = 1 AND e.is_active = 1 ORDER BY e.full_name"
+        )
+
+    def find_active_technician(self, tech_id):
+        return db.query(
+            "SELECT tc.technician_id, e.full_name "
+            "FROM technician tc JOIN employee e ON e.employee_id = tc.employee_id "
+            "WHERE tc.technician_id = %s AND tc.is_active = 1 AND e.is_active = 1",
+            (tech_id,),
+            one=True,
         )
 
     def get_ticket_for_update(self, ticket_id):

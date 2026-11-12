@@ -19,6 +19,7 @@ class FakeTicketRepository:
     def __init__(self):
         self.customers, self.devices, self.tickets = {}, {}, {}
         self.status_logs = []  # mỗi phần tử: (ticket_id, from_status, to_status, employee_id)
+        self.active_technicians = {1, 2}  # KTV mặc định đang hoạt động
         self._seq = {"customer": 0, "device": 0, "ticket": 0}
         self.commits = 0
         self.rollbacks = 0
@@ -71,7 +72,9 @@ class FakeTicketRepository:
     def add_ticket(self, **fields):
         self._seq["ticket"] += 1
         tid = self._seq["ticket"]
-        self.tickets[tid] = dict(fields)
+        record = {"technician_id": None, "closed_at": None}
+        record.update(fields)
+        self.tickets[tid] = record
         return tid
 
     def set_ticket_code(self, ticket_id, ticket_code):
@@ -97,6 +100,11 @@ class FakeTicketRepository:
         if ticket_id in self.tickets:
             self.tickets[ticket_id]["technician_id"] = tech_id
             self.tickets[ticket_id]["ticket_status"] = "DA_PHAN_CONG"
+
+    def find_active_technician(self, tech_id):
+        if tech_id in self.active_technicians:
+            return {"technician_id": tech_id}
+        return None
 
     def update_ticket_status(self, ticket_id, new_status):
         if ticket_id in self.tickets:

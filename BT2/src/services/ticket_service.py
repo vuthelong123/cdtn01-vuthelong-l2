@@ -150,14 +150,16 @@ def classify_ticket(repo, ticket_id, category, priority):
 
 
 def assign_technician(repo, ticket_id, tech_id, employee_id):
-    """UC04: Gán đúng 1 kỹ thuật viên cho phiếu bảo hành."""
+    """UC04: Gán đúng 1 kỹ thuật viên đang hoạt động cho phiếu bảo hành."""
     t = repo.get_ticket_for_update(ticket_id)
     if not t:
         raise ValidationError("Không tìm thấy phiếu.")
-    if t["technician_id"] is not None:
+    if t.get("technician_id") is not None:
         raise ValidationError("Phiếu đã có kỹ thuật viên, không thể gán thêm người thứ hai.")
     if t["ticket_status"] != "MOI":
         raise ValidationError("Chỉ phiếu ở trạng thái Mới mới được phân công.")
+    if not isinstance(tech_id, int) or tech_id <= 0 or not repo.find_active_technician(tech_id):
+        raise ValidationError("Kỹ thuật viên không tồn tại hoặc đã ngừng hoạt động.", ["technician_id"])
 
     repo.assign_technician(ticket_id, tech_id)
     repo.add_status_log(ticket_id, "MOI", "DA_PHAN_CONG", employee_id)
