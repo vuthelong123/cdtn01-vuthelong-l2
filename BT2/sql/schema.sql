@@ -6,7 +6,9 @@ CREATE TABLE employee (
     full_name VARCHAR(120) NOT NULL,
     role VARCHAR(30) NOT NULL,
     phone VARCHAR(20),
-    is_active BOOLEAN NOT NULL
+    is_active BOOLEAN NOT NULL,
+    username VARCHAR(50) NULL UNIQUE,
+    password_hash VARCHAR(255) NULL
 );
 
 CREATE TABLE customer (

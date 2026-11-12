@@ -17,7 +17,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo.
-echo [BUOC 2/3] Chay kiem thu tu dong (29/29 Unit Tests)...
+echo [BUOC 2/3] Chay kiem thu tu dong (61/61 Tests)...
 pytest -v
 if %ERRORLEVEL% NEQ 0 (
     echo.

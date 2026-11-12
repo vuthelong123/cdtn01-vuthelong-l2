@@ -1,6 +1,7 @@
 # Môi trường và bí mật
 .env
 *.env
+!.env.example
 
 # Python cache
 __pycache__/
@@ -20,8 +21,19 @@ __pycache__/
 Thumbs.db
 Desktop.ini
 
-# SQLite databases
+# SQLite databases & dữ liệu lớn / mô hình
 *.db
 *.sqlite
 *.sqlite3
 warranty.db
+*.csv
+*.parquet
+*.zip
+*.tar.gz
+*.pkl
+*.joblib
+*.pt
+*.pth
+*.h5
+*.onnx
+*.safetensors

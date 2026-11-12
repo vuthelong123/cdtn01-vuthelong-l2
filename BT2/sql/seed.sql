@@ -1,11 +1,11 @@
 USE warranty_db;
 
--- Nhân viên: 1 tiếp nhận, 1 quản trị, 2 kỹ thuật viên
-INSERT INTO employee (employee_id, full_name, role, phone, is_active) VALUES
-(1, 'Nguyen Thi Lan',  'TIEP_NHAN', '0901000001', TRUE),
-(2, 'Tran Van Minh',   'QUAN_TRI',  '0901000002', TRUE),
-(3, 'Le Hoang Nam',    'KY_THUAT',  '0901000003', TRUE),
-(4, 'Pham Quoc Bao',   'KY_THUAT',  '0901000004', TRUE);
+-- Nhân viên: 1 tiếp nhận, 1 quản trị, 2 kỹ thuật viên (mật khẩu mẫu: 123456)
+INSERT INTO employee (employee_id, full_name, role, phone, is_active, username, password_hash) VALUES
+(1, 'Nguyen Thi Lan',  'TIEP_NHAN', '0901000001', TRUE, 'nhanvientiepnhan', 'scrypt:32768:8:1$uXQJcwyPoumxXWOW$a621d8d2f113b84996d6e2c69892bb58d07ba43901a63889f7b5eea6a23a4bfcb3b7ed1bbb58eb10dbd81f67a8904294d764d84571fa5d3a551eaf9f1e6253c1'),
+(2, 'Tran Van Minh',   'QUAN_TRI',  '0901000002', TRUE, 'quantrivien',      'scrypt:32768:8:1$uXQJcwyPoumxXWOW$a621d8d2f113b84996d6e2c69892bb58d07ba43901a63889f7b5eea6a23a4bfcb3b7ed1bbb58eb10dbd81f67a8904294d764d84571fa5d3a551eaf9f1e6253c1'),
+(3, 'Le Hoang Nam',    'KY_THUAT',  '0901000003', TRUE, 'kythuatvien',      'scrypt:32768:8:1$uXQJcwyPoumxXWOW$a621d8d2f113b84996d6e2c69892bb58d07ba43901a63889f7b5eea6a23a4bfcb3b7ed1bbb58eb10dbd81f67a8904294d764d84571fa5d3a551eaf9f1e6253c1'),
+(4, 'Pham Quoc Bao',   'KY_THUAT',  '0901000004', TRUE, 'kythuatvien2',     'scrypt:32768:8:1$uXQJcwyPoumxXWOW$a621d8d2f113b84996d6e2c69892bb58d07ba43901a63889f7b5eea6a23a4bfcb3b7ed1bbb58eb10dbd81f67a8904294d764d84571fa5d3a551eaf9f1e6253c1');
 
 INSERT INTO technician (technician_id, employee_id, center_id, is_active) VALUES
 (1, 3, 1, TRUE),

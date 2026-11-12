@@ -1,34 +1,69 @@
-Down file ở github về và  giải nén 
+# Hệ thống Quản lý Yêu cầu Bảo hành — Mekong Mobile (Luồng L2)
 
-HƯỚNG DẪN TÁI TẠO DỰ ÁN
+- **Môn học:** Chuyên đề tốt nghiệp 01 (CDTN01) — Track SE
+- **Sinh viên thực hiện:** Vũ Thế Long — MSSV: `2374802010286`
 
-Cách 1: Chạy tự động bằng 1 cú click (Khuyên dùng trên Windows)
-Chỉ cần vào thư mục BT2 và click đúp vào file:
-run.bat
-(Script sẽ tự động cài đặt thư viện, chạy 29/29 Unit Tests và khởi động Web Server ngay lập tức).
+---
 
-Cách 2: Chạy bằng 3 câu lệnh thủ công trong Terminal / PowerShell
-1. Mở terminal tại thư mục BT2:
-   cd BT2
-2. Cài đặt thư viện cần thiết:
-   pip install -r requirements.txt
-   Yêu cầu môi trường: Python 3.8 trở lên (Khuyên dùng: Python 3.10, 3.11 hoặc 3.12)
-4. Chạy kiểm thử tự động (29 Unit Tests):
-   pytest -v
-   (Toàn bộ 29 test case đều PASSED trong ~0.05s).
-5. Khởi chạy ứng dụng Web:
-   python src/main.py
-   Hệ thống sẽ tự động tạo cơ sở dữ liệu `warranty.db` và nạp sẵn tài khoản mẫu.
-6. Mở trình duyệt truy cập:
-   http://127.0.0.1:5000
+## 1. Lấy mã nguồn từ GitHub (Tag `v1.0`)
 
-Danh sách tài khoản đăng nhập thử nghiệm (Mật khẩu chung: `123456`)
-- Nhân viên tiếp nhận: tài khoản `nhanvientiepnhan` mật khẩu `123456` Tạo phiếu mới (UC01), Phân loại sự cố (UC02), Tra cứu khách hàng theo SĐT (US1-AC1)
-- Quản trị viên: tài khoản `quantrivien` mật khẩu `123456` Tra cứu/Lọc danh sách phiếu (UC03), Phân công Kỹ thuật viên (UC04), Đóng phiếu bảo hành (UC07)
-- Kỹ thuật viên 1: tài khoản `kythuatvien` mật khẩu `123456` Xem phiếu được phân công (UC05), Cập nhật tiến độ theo quy trình tuyến tính (UC06)
-- Kỹ thuật viên 2: tài khoản `kythuatvien2` mật khẩu `123456` Kiểm tra phân quyền cách ly giữa các kỹ thuật viên khác nhau
+Repo để ở chế độ **Public** (không cần đăng nhập GitHub hay cấp quyền). Trên máy bất kỳ có cài sẵn Git và Docker, mở terminal và chạy:
 
-Kết quả kiểm thử tự động (29 Unit Tests)
-Lệnh thực thi:
-pytest -v
-Kết quả: `29 passed in 0.05s`
+```bash
+git clone --branch v1.0 https://github.com/vuthelong123/CDTN01.git kiem-tra
+cd kiem-tra
+```
+
+---
+
+## 2. Chạy hệ thống bằng 2 lệnh (Docker Compose)
+
+Yêu cầu: **Docker Desktop / Docker Engine** (có plugin `docker compose`) và cổng **`8000`** đang trống.
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+```
+
+Sau khi hai container (`db` MySQL 8.0 và `web` Flask + Gunicorn) khởi động xong (dữ liệu mẫu được nạp tự động từ `BT2/sql/schema.sql` và `BT2/sql/seed.sql`), truy cập ứng dụng tại:
+
+- **Web UI:** http://localhost:8000
+
+---
+
+## Kiểm tra hệ thống & Chạy bộ kiểm thử
+
+```bash
+# 1. Kiểm tra trạng thái container (cả db và web phải ở trạng thái healthy)
+docker compose ps
+
+# 2. Kiểm tra endpoint sức khỏe hệ thống
+curl -s http://localhost:8000/health
+# Kỳ vọng: {"database":"ok","status":"ok"}
+
+# 3. Chạy toàn bộ 61 test case (Unit + Integration DB thật + API/Security)
+docker compose exec web pytest -v
+```
+
+*(Tùy chọn chạy cục bộ không cần Docker: vào `BT2/`, cài `pip install -r requirements.txt`, chạy `pytest -v` và `python src/main.py` để dùng SQLite nhúng trên cổng `5000`.)*
+
+---
+
+## Tài khoản đăng nhập mẫu (Mật khẩu chung: `123456`)
+
+| Vai trò | Tài khoản | Mật khẩu | Chức năng chính |
+| :--- | :--- | :---: | :--- |
+| Nhân viên tiếp nhận | `nhanvientiepnhan` | `123456` | Tra cứu khách theo SĐT, tạo phiếu (UC01), phân loại (UC02), sửa mô tả, đóng phiếu |
+| Quản trị viên | `quantrivien` | `123456` | Tra cứu/lọc phiếu (UC03), phân công KTV (UC04), cập nhật toàn diện phiếu |
+| Kỹ thuật viên 1 | `kythuatvien` | `123456` | Xem phiếu được phân công (UC05), cập nhật trạng thái tuyến tính (UC06) |
+| Kỹ thuật viên 2 | `kythuatvien2` | `123456` | Kiểm thử cách ly quyền sở hữu giữa các kỹ thuật viên (OWASP A01) |
+
+---
+
+## Cấu trúc thư mục chính
+
+- `docker-compose.yml`, `.env.example`, `.gitignore`: Cấu hình đóng gói 2 container (`web` + `db`) ở gốc repo.
+- `BT2/src/`: Mã nguồn Flask 4 tầng (`routes/`, `services/`, `validators/`, `repositories/`).
+- `BT2/tests/`: Bộ 61 kiểm thử tự động (`pytest -v`).
+- `BT2/sql/`: Lược đồ và dữ liệu mẫu MySQL (`schema.sql`, `seed.sql`).
+- `BT2/docs/`: Tài liệu kiểm thử & kỹ thuật BT3 (`test-plan.md`, `test-report.md`, `bug-log.md`, `checklist-bao-mat.md`, `api-docs.md`, `thay-doi-thiet-ke.md`, `ai-disclosure.md`, `srs.md`).
