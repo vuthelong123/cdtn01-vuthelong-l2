@@ -5,6 +5,7 @@ Hỗ trợ hai chế độ:
 - Khi chạy cục bộ không có MySQL: dùng file SQLite tạm riêng cho test (không đụng warranty.db thật).
 """
 import os
+import socket
 import sqlite3
 import tempfile
 from werkzeug.security import generate_password_hash
@@ -15,9 +16,19 @@ _TEST_SQLITE_PATH = os.path.join(tempfile.gettempdir(), "cdtn01_test_warranty.db
 _PWD_HASH = generate_password_hash("123456")
 
 
+def _can_resolve_mysql_host():
+    host = os.getenv("DB_HOST", "127.0.0.1").strip()
+    try:
+        socket.gethostbyname(host)
+        return True
+    except OSError:
+        return False
+
+
 def configure_test_db_env():
-    """Đảm bảo test chạy cục bộ không ghi đè vào warranty.db của người dùng."""
-    if os.getenv("DB_TYPE", "").strip().lower() != "mysql":
+    """Đảm bảo test chạy cục bộ (kể cả khi đã tạo .env cho Docker) không lỗi host 'db' hay ghi đè warranty.db."""
+    db_type = os.getenv("DB_TYPE", "").strip().lower()
+    if db_type != "mysql" or not _can_resolve_mysql_host():
         os.environ["DB_TYPE"] = "sqlite"
         db_connection.SQLITE_DB_PATH = _TEST_SQLITE_PATH
 
