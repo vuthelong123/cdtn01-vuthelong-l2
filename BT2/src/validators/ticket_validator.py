@@ -49,10 +49,25 @@ REQUIRED_FIELD_LABELS = {
 class ValidationError(Exception):
     """Ngoại lệ khi dữ liệu đầu vào vi phạm quy tắc nghiệp vụ."""
 
-    def __init__(self, message, fields=None):
+    def __init__(self, message, fields=None, status_code=400):
         super().__init__(message)
         self.message = message
         self.fields = fields or []
+        self.status_code = status_code
+
+
+class AuthorizationError(ValidationError):
+    """Ngoại lệ khi người dùng vi phạm quyền sở hữu hoặc phân quyền (HTTP 403)."""
+
+    def __init__(self, message, fields=None):
+        super().__init__(message, fields=fields, status_code=403)
+
+
+class NotFoundError(ValidationError):
+    """Ngoại lệ khi không tìm thấy tài nguyên yêu cầu (HTTP 404)."""
+
+    def __init__(self, message, fields=None):
+        super().__init__(message, fields=fields, status_code=404)
 
 
 def normalize_phone(raw):

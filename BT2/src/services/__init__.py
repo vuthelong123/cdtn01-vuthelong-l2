@@ -1,11 +1,13 @@
 from .ticket_service import (CATEGORY_LABELS, INITIAL_STATUS, MIN_DESC_LENGTH,
                              PRIORITY_LABELS, SLA_HOURS, STATUS_LABELS,
-                             STATUS_ORDER, TECH_TRANSITIONS, ValidationError,
-                             admin_update_ticket, assign_technician,
-                             classify_ticket, close_ticket, compute_due_date,
-                             create_ticket, mask_phone, normalize_phone,
-                             update_tech_status, update_ticket_description,
-                             validate_ticket_input, warranty_state)
+                             STATUS_ORDER, TECH_TRANSITIONS,
+                             AuthorizationError, NotFoundError,
+                             ValidationError, admin_update_ticket,
+                             assign_technician, classify_ticket, close_ticket,
+                             compute_due_date, create_ticket, mask_phone,
+                             normalize_phone, update_tech_status,
+                             update_ticket_description, validate_ticket_input,
+                             warranty_state)
 
 __all__ = [
     "create_ticket",
@@ -17,6 +19,8 @@ __all__ = [
     "admin_update_ticket",
     "compute_due_date",
     "warranty_state",
+    "AuthorizationError",
+    "NotFoundError",
     "ValidationError",
     "validate_ticket_input",
     "normalize_phone",

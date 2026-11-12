@@ -158,7 +158,7 @@ def _init_sqlite(conn):
 
 
 def connect():
-    """Tạo kết nối mới: Thử MySQL trước, nếu thất bại tự động dùng SQLite."""
+    """Tạo kết nối mới: ưu tiên theo DB_TYPE (mysql / sqlite / auto fallback)."""
     db_type = os.getenv("DB_TYPE", "").strip().lower()
 
     if db_type != "sqlite":
@@ -173,18 +173,33 @@ def connect():
                 database=os.getenv("DB_NAME", "warranty_db"),
                 charset="utf8mb4",
                 autocommit=False,
-                connection_timeout=2,
+                connection_timeout=3,
             )
             return conn
         except Exception:
-            # MySQL không khả dụng -> fallback SQLite
-            pass
+            if db_type == "mysql":
+                raise
+            # Khi chưa chỉ định DB_TYPE=mysql -> fallback SQLite để chạy nhanh cục bộ
 
     # Kết nối SQLite nhúng
-    conn = sqlite3.connect(SQLITE_DB_PATH)
+    sqlite_path = os.getenv("SQLITE_DB_PATH") or SQLITE_DB_PATH
+    conn = sqlite3.connect(sqlite_path)
     conn.row_factory = sqlite3.Row
     _init_sqlite(conn)
     return conn
+
+
+def check_db_health():
+    """Kiểm tra nhanh tình trạng sẵn sàng của CSDL cho endpoint /health."""
+    conn = connect()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT 1")
+        cur.fetchone()
+        cur.close()
+        return True
+    finally:
+        conn.close()
 
 
 def get_db():

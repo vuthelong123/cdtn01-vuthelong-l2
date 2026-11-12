@@ -8,22 +8,23 @@ import sys
 from datetime import datetime
 
 from dotenv import load_dotenv
-from flask import Flask
+from flask import Flask, jsonify
 
 # Đảm bảo đường dẫn import tương đối từ thư mục src/
 sys.path.insert(0, os.path.dirname(__file__))
 
-from repositories import close_db
+from repositories import check_db_health, close_db
 from routes import (ROLE_LABELS, admin_bp, auth_bp, reception_bp,
                     tech_bp)
 from services import (CATEGORY_LABELS, PRIORITY_LABELS, STATUS_LABELS,
                       STATUS_ORDER, mask_phone)
 
-# Nạp file .env từ thư mục gốc BT2
+# Nạp file .env từ thư mục BT2 hoặc thư mục gốc dự án
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
-app.secret_key = os.getenv("FLASK_SECRET", "dev-only-change-me")
+app.secret_key = os.getenv("FLASK_SECRET") or os.urandom(24)
 app.teardown_appcontext(close_db)
 
 # Đăng ký các Blueprint phân tầng
@@ -75,6 +76,17 @@ def inject_globals():
     )
 
 
+@app.route("/health", endpoint="health")
+def health():
+    """Endpoint kiểm tra tình trạng sẵn sàng của ứng dụng và cơ sở dữ liệu."""
+    try:
+        check_db_health()
+        return jsonify(status="ok", database="ok"), 200
+    except Exception:
+        app.logger.exception("Healthcheck database check failed")
+        return jsonify(status="error", database="unavailable"), 503
+
+
 if __name__ == "__main__":
     import sqlite3
     from repositories import connect
@@ -83,13 +95,17 @@ if __name__ == "__main__":
     db_name = "SQLite nhúng (warranty.db - Tự động khởi tạo, không cần MySQL)" if isinstance(conn, sqlite3.Connection) else "MySQL Server"
     conn.close()
 
+    host = os.getenv("FLASK_HOST", "127.0.0.1")
+    port = int(os.getenv("PORT", os.getenv("FLASK_PORT", "5000")))
+    debug = os.getenv("FLASK_DEBUG", "false").strip().lower() == "true"
+
     print("=" * 65)
-    print(" HE THONG QUAN LY YEU CAU BAO HANH - MEKONG MOBILE (BT2)")
+    print(" HE THONG QUAN LY YEU CAU BAO HANH - MEKONG MOBILE (BT3)")
     print(f" * Co so du lieu : {db_name}")
-    print(" * Dia chi Web   : http://127.0.0.1:5000")
+    print(f" * Dia chi Web   : http://{host}:{port}")
     print(" * Tai khoan mau :")
     print("    - Tiep nhan : nhanvientiepnhan / 123456")
     print("    - Quan tri  : quantrivien     / 123456")
     print("    - Ky thuat  : kythuatvien     / 123456 (hoac kythuatvien2)")
     print("=" * 65)
-    app.run(debug=True, port=5000)
+    app.run(host=host, port=port, debug=debug)

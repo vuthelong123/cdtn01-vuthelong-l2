@@ -9,7 +9,8 @@ from datetime import date, datetime, timedelta
 
 from validators.ticket_validator import (CATEGORY_LABELS, MIN_DESC_LENGTH,
                                          PRIORITY_LABELS, STATUS_LABELS,
-                                         STATUS_ORDER, ValidationError,
+                                         STATUS_ORDER, AuthorizationError,
+                                         NotFoundError, ValidationError,
                                          mask_phone, normalize_phone,
                                          validate_ticket_input)
 
@@ -139,7 +140,7 @@ def classify_ticket(repo, ticket_id, category, priority):
 
     t = repo.get_ticket_for_update(ticket_id)
     if not t:
-        raise ValidationError("Không tìm thấy phiếu.")
+        raise NotFoundError("Không tìm thấy phiếu.")
     if t["ticket_status"] in ("HOAN_TAT", "DA_DONG"):
         raise ValidationError("Phiếu đã hoàn tất hoặc đã đóng, không thể phân loại lại.")
 
@@ -153,7 +154,7 @@ def assign_technician(repo, ticket_id, tech_id, employee_id):
     """UC04: Gán đúng 1 kỹ thuật viên đang hoạt động cho phiếu bảo hành."""
     t = repo.get_ticket_for_update(ticket_id)
     if not t:
-        raise ValidationError("Không tìm thấy phiếu.")
+        raise NotFoundError("Không tìm thấy phiếu.")
     if t.get("technician_id") is not None:
         raise ValidationError("Phiếu đã có kỹ thuật viên, không thể gán thêm người thứ hai.")
     if t["ticket_status"] != "MOI":
@@ -171,7 +172,7 @@ def close_ticket(repo, ticket_id, employee_id):
     """UC07: Đóng phiếu bảo hành khi đã ở trạng thái Hoàn tất."""
     t = repo.get_ticket_for_update(ticket_id)
     if not t:
-        raise ValidationError("Không tìm thấy phiếu.")
+        raise NotFoundError("Không tìm thấy phiếu.")
     if t["ticket_status"] != "HOAN_TAT":
         raise ValidationError("Chỉ đóng được phiếu ở trạng thái Hoàn tất.")
 
@@ -185,8 +186,10 @@ def close_ticket(repo, ticket_id, employee_id):
 def update_tech_status(repo, ticket_id, tech_id, new_status, employee_id):
     """UC06: Kỹ thuật viên cập nhật trạng thái theo đúng tiến trình tuyến tính."""
     t = repo.get_ticket_for_update(ticket_id)
-    if not t or t["technician_id"] != tech_id:
-        raise ValidationError("Phiếu này không được phân công cho bạn.")
+    if not t:
+        raise NotFoundError("Không tìm thấy phiếu.")
+    if t.get("technician_id") != tech_id:
+        raise AuthorizationError("Phiếu này không được phân công cho bạn.")
 
     allowed = TECH_TRANSITIONS.get(t["ticket_status"], [])
     if new_status not in allowed:
@@ -206,7 +209,7 @@ def update_ticket_description(repo, ticket_id, new_desc, employee_id):
 
     t = repo.get_ticket_for_update(ticket_id)
     if not t:
-        raise ValidationError("Không tìm thấy phiếu.")
+        raise NotFoundError("Không tìm thấy phiếu.")
     if t["ticket_status"] == "DA_DONG":
         raise ValidationError("Phiếu đã đóng, không thể sửa mô tả.")
 
@@ -219,7 +222,7 @@ def admin_update_ticket(repo, ticket_id, data, employee_id):
     """Quản trị viên cập nhật toàn diện thông tin phiếu bảo hành."""
     t = repo.get_ticket_for_update(ticket_id)
     if not t:
-        raise ValidationError("Không tìm thấy phiếu.")
+        raise NotFoundError("Không tìm thấy phiếu.")
 
     category = data.get("issue_category", t["issue_category"])
     priority = data.get("priority", t["priority"])

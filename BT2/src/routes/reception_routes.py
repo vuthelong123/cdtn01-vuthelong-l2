@@ -4,10 +4,12 @@ from flask import (Blueprint, flash, jsonify, redirect, render_template,
 
 from repositories import MySQLTicketRepository, query
 from services import (ValidationError, classify_ticket, close_ticket,
-                      create_ticket, normalize_phone, update_ticket_description,
-                      warranty_state)
+                      create_ticket, mask_phone, normalize_phone,
+                      update_ticket_description, warranty_state)
 
 from .auth_routes import login_required
+from .helpers import (get_payload, internal_error_response,
+                      validation_error_response, wants_json)
 
 reception_bp = Blueprint("reception", __name__)
 
@@ -19,6 +21,10 @@ def reception_view():
     tickets = repo.find_tickets(limit=50)
     for t in tickets:
         t["warranty"] = warranty_state(t)
+    if wants_json():
+        for t in tickets:
+            t["customer_phone"] = mask_phone(t.get("customer_phone"))
+        return jsonify(tickets=tickets), 200
     return render_template("reception.html", tickets=tickets)
 
 
@@ -28,7 +34,7 @@ def api_customer():
     """US1-AC1: Tìm khách bằng SĐT, tự động trả về thông tin và thiết bị có sẵn (kèm ngày mua, hạn BH)."""
     phone = normalize_phone(request.args.get("phone"))
     if not phone:
-        return jsonify(valid=False)
+        return jsonify(valid=False, error="Số điện thoại không hợp lệ."), 400
 
     cust = query("SELECT customer_id, full_name, email FROM customer WHERE phone = %s", (phone,), one=True)
     if not cust:
@@ -62,12 +68,19 @@ def create_ticket_route():
     """UC01: Ủy quyền tạo phiếu cho ticket_service."""
     repo = MySQLTicketRepository()
     try:
-        res = create_ticket(repo, request.form, session["employee_id"])
+        res = create_ticket(repo, get_payload(), session["employee_id"])
+        if wants_json():
+            return jsonify(
+                ticket_id=res["ticket_id"],
+                ticket_code=res["ticket_code"],
+                ticket_status=res["ticket_status"],
+                due_date=res["due_date"].isoformat(),
+            ), 201
         flash(f"Đã tạo phiếu {res['ticket_code']}. Hạn cam kết: {res['due_date']:%d/%m/%Y %H:%M}.", "success")
     except ValidationError as exc:
-        flash(exc.message, "error")
+        return validation_error_response(exc, "reception")
     except Exception as exc:
-        flash(f"Lỗi khi lưu phiếu: {exc}", "error")
+        return internal_error_response(exc, "reception")
     return redirect(url_for("reception"))
 
 
@@ -76,15 +89,20 @@ def create_ticket_route():
 def classify_ticket_route(ticket_id):
     """UC02: Phân loại nhóm sự cố và mức ưu tiên."""
     repo = MySQLTicketRepository()
-    category = request.form.get("issue_category")
-    priority = request.form.get("priority")
+    payload = get_payload()
+    category = payload.get("issue_category")
+    priority = payload.get("priority")
     try:
         code = classify_ticket(repo, ticket_id, category, priority)
+        if wants_json():
+            return jsonify(ticket_code=code, issue_category=category, priority=priority), 200
         flash(f"Đã phân loại phiếu {code}.", "success")
     except ValidationError as exc:
-        flash(exc.message, "error")
+        repo.rollback()
+        return validation_error_response(exc, "reception")
     except Exception as exc:
-        flash(f"Lỗi: {exc}", "error")
+        repo.rollback()
+        return internal_error_response(exc, "reception")
     return redirect(url_for("reception"))
 
 
@@ -95,13 +113,15 @@ def close_ticket_route(ticket_id):
     repo = MySQLTicketRepository()
     try:
         code = close_ticket(repo, ticket_id, session["employee_id"])
+        if wants_json():
+            return jsonify(ticket_code=code, ticket_status="DA_DONG"), 200
         flash(f"Đã đóng phiếu {code} và hoàn tất quy trình.", "success")
     except ValidationError as exc:
         repo.rollback()
-        flash(exc.message, "error")
+        return validation_error_response(exc, "reception")
     except Exception as exc:
         repo.rollback()
-        flash(f"Lỗi: {exc}", "error")
+        return internal_error_response(exc, "reception")
     return redirect(url_for("reception"))
 
 
@@ -110,14 +130,16 @@ def close_ticket_route(ticket_id):
 def edit_ticket_desc_route(ticket_id):
     """Nhân viên tiếp nhận chỉnh sửa mô tả cho phiếu đã tạo."""
     repo = MySQLTicketRepository()
-    new_desc = request.form.get("issue_desc")
+    new_desc = get_payload().get("issue_desc")
     try:
         code = update_ticket_description(repo, ticket_id, new_desc, session["employee_id"])
+        if wants_json():
+            return jsonify(ticket_code=code, message="Đã cập nhật mô tả."), 200
         flash(f"Đã cập nhật mô tả phiếu {code}.", "success")
     except ValidationError as exc:
         repo.rollback()
-        flash(exc.message, "error")
+        return validation_error_response(exc, "reception")
     except Exception as exc:
         repo.rollback()
-        flash(f"Lỗi: {exc}", "error")
+        return internal_error_response(exc, "reception")
     return redirect(url_for("reception"))

@@ -1,12 +1,14 @@
 """Routes dành cho Quản trị viên: UC03 tra cứu, UC04 gán KTV, cập nhật phiếu."""
-from flask import (Blueprint, flash, redirect, render_template, request,
-                   session, url_for)
+from flask import (Blueprint, flash, jsonify, redirect, render_template,
+                   request, session, url_for)
 
 from repositories import MySQLTicketRepository
 from services import (STATUS_LABELS, ValidationError, admin_update_ticket,
                       assign_technician, warranty_state)
 
 from .auth_routes import login_required
+from .helpers import (get_payload, internal_error_response,
+                      validation_error_response, wants_json)
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -33,6 +35,9 @@ def admin_view():
     counts = repo.get_status_counts()
     technicians = repo.get_active_technicians()
 
+    if wants_json():
+        return jsonify(tickets=tickets, counts=counts, technicians=technicians), 200
+
     return render_template(
         "admin.html",
         tickets=tickets,
@@ -47,16 +52,22 @@ def admin_view():
 @login_required("QUAN_TRI")
 def assign_ticket_route(ticket_id):
     repo = MySQLTicketRepository()
-    tech_id = request.form.get("technician_id", type=int)
+    raw_tech = get_payload().get("technician_id")
+    try:
+        tech_id = int(raw_tech) if raw_tech not in (None, "") else None
+    except (TypeError, ValueError):
+        tech_id = None
     try:
         code = assign_technician(repo, ticket_id, tech_id, session["employee_id"])
+        if wants_json():
+            return jsonify(ticket_code=code, technician_id=tech_id, ticket_status="DA_PHAN_CONG"), 200
         flash(f"Đã phân công phiếu {code}.", "success")
     except ValidationError as exc:
         repo.rollback()
-        flash(exc.message, "error")
+        return validation_error_response(exc, "admin")
     except Exception as exc:
         repo.rollback()
-        flash(f"Lỗi: {exc}", "error")
+        return internal_error_response(exc, "admin")
     return redirect(request.referrer or url_for("admin"))
 
 
@@ -65,12 +76,14 @@ def assign_ticket_route(ticket_id):
 def admin_update_ticket_route(ticket_id):
     repo = MySQLTicketRepository()
     try:
-        code = admin_update_ticket(repo, ticket_id, request.form, session["employee_id"])
+        code = admin_update_ticket(repo, ticket_id, get_payload(), session["employee_id"])
+        if wants_json():
+            return jsonify(ticket_code=code, message="Đã cập nhật thông tin phiếu."), 200
         flash(f"Đã cập nhật thông tin phiếu {code}.", "success")
     except ValidationError as exc:
         repo.rollback()
-        flash(exc.message, "error")
+        return validation_error_response(exc, "admin")
     except Exception as exc:
         repo.rollback()
-        flash(f"Lỗi: {exc}", "error")
+        return internal_error_response(exc, "admin")
     return redirect(request.referrer or url_for("admin"))
