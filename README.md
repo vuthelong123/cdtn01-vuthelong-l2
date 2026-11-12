@@ -37,11 +37,7 @@ Sau khi hai container (`db` MySQL 8.0 và `web` Flask + Gunicorn) khởi động
 # 1. Kiểm tra trạng thái container (cả db và web phải ở trạng thái healthy)
 docker compose ps
 
-# 2. Kiểm tra endpoint sức khỏe hệ thống
-curl -s http://localhost:8000/health
-# Kỳ vọng: {"database":"ok","status":"ok"}
-
-# 3. Chạy toàn bộ 61 test case (Unit + Integration DB thật + API/Security)
+# 2. Chạy toàn bộ 61 test case (Unit + Integration DB thật + API/Security)
 docker compose exec web pytest -v
 ```
 
