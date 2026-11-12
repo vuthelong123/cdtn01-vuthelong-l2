@@ -10,7 +10,7 @@
 Repo để ở chế độ **Public** (không cần đăng nhập GitHub hay cấp quyền). Trên máy bất kỳ có cài sẵn Git và Docker, mở terminal và chạy:
 
 ```bash
-git clone --branch v1.0 https://github.com/vuthelong123/CDTN01.git kiem-tra
+git clone --branch v1.0 https://github.com/vuthelong123/VuTheLong_2374802010286_L2.git kiem-tra
 cd kiem-tra
 ```
 
